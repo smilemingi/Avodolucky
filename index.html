@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Avodo Fortune</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Pretendard', sans-serif; -webkit-tap-highlight-color: transparent; }
+
+        /* 쿠키 흔들림 애니메이션 */
+        @keyframes cookieShake {
+            0% { transform: rotate(0deg) scale(1); }
+            20% { transform: rotate(-12deg) scale(1.1); }
+            40% { transform: rotate(12deg) scale(1.1); }
+            60% { transform: rotate(-12deg) scale(1.15); }
+            80% { transform: rotate(12deg) scale(1.15); }
+            100% { transform: rotate(0deg) scale(1.3); opacity: 0; filter: blur(4px); }
+        }
+
+        .cookie-shake {
+            animation: cookieShake 0.6s ease-in-out forwards;
+        }
+
+        /* 결과지 등장 애니메이션 */
+        @keyframes paperUnfold {
+            0% { opacity: 0; transform: scale(0.5) translateY(30px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .animate-paper { animation: paperUnfold 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-950 via-purple-950 to-indigo-950 min-h-screen text-white flex items-center justify-center p-4">
+
+    <div class="max-w-md w-full bg-slate-900/60 backdrop-blur-2xl border border-white/15 rounded-3xl p-6 sm:p-8 shadow-2xl text-center relative overflow-hidden">
+        
+        <!-- 배경 그래픽 빛 효과 -->
+        <div class="absolute -top-24 -left-24 w-56 h-56 bg-amber-500/20 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute -bottom-24 -right-24 w-56 h-56 bg-purple-500/20 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div class="flex justify-between items-center mb-6 relative z-10">
+            <span class="text-xs font-bold text-amber-400 tracking-widest uppercase">AVODO FORTUNE</span>
+            <!-- 언어 셀렉터 -->
+            <select id="lang-select" onchange="changeLanguage(this.value)" class="bg-black/50 border border-white/20 text-xs rounded-xl px-3 py-1.5 text-white outline-none focus:border-amber-400 transition cursor-pointer">
+                <option value="ko" class="bg-slate-900">🇰🇷 한국어</option>
+                <option value="en" class="bg-slate-900">🇺🇸 English</option>
+                <option value="ja" class="bg-slate-900">🇯🇵 日本語</option>
+                <option value="zh" class="bg-slate-900">🇨🇳 中文</option>
+            </select>
+        </div>
+
+        <!-- 헤더 -->
+        <h1 id="txt-main-title" class="text-2xl sm:text-3xl font-extrabold tracking-tight mb-2 bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-500 bg-clip-text text-transparent">
+            ✨ 오늘의 운세 ✨
+        </h1>
+        <p id="txt-sub-title" class="text-gray-400 text-xs sm:text-sm mb-6">하루에 딱 한 번, 당신의 운을 시험해보세요!</p>
+
+        <!-- 메인 인터랙션 영역 -->
+        <div id="content-box" class="space-y-6 relative z-10">
+            <!-- 운세 뽑기 전 화면 -->
+            <div id="before-draw" class="flex flex-col items-center">
+                <!-- 포춘 쿠키 아이콘 -->
+                <div id="cookie-btn" onclick="drawFortune()" class="my-6 text-7xl sm:text-8xl cursor-pointer select-none transition-transform hover:scale-110 active:scale-95 inline-block">
+                    🥠
+                </div>
+                <button onclick="drawFortune()" id="txt-btn-draw" class="w-full py-3.5 bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-slate-950 font-extrabold rounded-2xl shadow-lg shadow-amber-500/20 hover:brightness-110 active:scale-95 transition text-base sm:text-lg cursor-pointer">
+                    운세 쿠키 깨기 🍪
+                </button>
+            </div>
+
+            <!-- 운세 결과 화면 (숨김 처리) -->
+            <div id="after-draw" class="hidden text-left bg-gradient-to-b from-slate-800/90 to-slate-900/95 p-5 sm:p-6 rounded-2xl border border-amber-500/30 shadow-xl space-y-4">
+                <div class="flex justify-between items-center border-b border-white/10 pb-3">
+                    <span id="res-title" class="text-amber-400 font-bold text-base sm:text-lg"></span>
+                    <span id="res-score" class="text-xs sm:text-sm bg-amber-400/10 border border-amber-400/30 text-amber-300 px-3 py-1 rounded-full font-bold"></span>
+                </div>
+                <p id="res-desc" class="text-gray-200 text-xs sm:text-sm leading-relaxed"></p>
+                
+                <!-- 좋은 것 / 안 좋은 것 / 행운 아이템 박스 -->
+                <div class="space-y-2 pt-2 border-t border-white/10">
+                    <div class="bg-emerald-500/10 border border-emerald-500/20 p-2.5 rounded-xl text-xs flex justify-between items-center">
+                        <span id="label-dos" class="text-emerald-400 font-bold">✅ 하면 좋은 것</span>
+                        <span id="res-dos" class="text-emerald-200 font-medium"></span>
+                    </div>
+                    <div class="bg-rose-500/10 border border-rose-500/20 p-2.5 rounded-xl text-xs flex justify-between items-center">
+                        <span id="label-donts" class="text-rose-400 font-bold">❌ 피해야 할 것</span>
+                        <span id="res-donts" class="text-rose-200 font-medium"></span>
+                    </div>
+                    <div class="bg-amber-500/10 border border-amber-500/20 p-2.5 rounded-xl text-xs flex justify-between items-center">
+                        <span id="label-item" class="text-amber-400 font-bold">💡 행운 아이템</span>
+                        <span id="res-item" class="text-amber-200 font-medium"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 이미 뽑았을 때 안내 문구 -->
+            <div id="already-drawn" class="hidden space-y-4">
+                <div id="txt-already-msg" class="p-5 sm:p-6 bg-red-500/10 border border-red-500/30 rounded-2xl text-red-200 text-xs sm:text-sm leading-relaxed">
+                    ⏳ 오늘은 이미 운세를 확인하셨습니다!<br>내일 다시 찾아와 주세요.
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-8 text-xs text-slate-500">
+            © Avodo Company. All rights reserved.
+        </div>
+    </div>
+
+    <script>
+        const i18n = {
+            ko: {
+                mainTitle: "✨ 오늘의 운세 ✨",
+                subTitle: "하루에 딱 한 번, 당신의 운을 시험해보세요!",
+                btnDraw: "운세 쿠키 깨기 🍪",
+                labelDos: "✅ 하면 좋은 것",
+                labelDonts: "❌ 피해야 할 것",
+                labelItem: "💡 행운 아이템",
+                alreadyMsg: "⏳ 오늘은 이미 운세를 확인하셨습니다!<br>내일 다시 찾아와 주세요.",
+                alertOnce: "하루에 한 번만 볼 수 있습니다!",
+                fortunes: [
+                    { title: "천운 대통 (天運大通) 🌟", score: "100점", desc: "모든 기운이 당신을 향해 웃어주는 최고의 날! 망설이던 일이 있다면 지금 바로 시작해 보세요.", dos: "새로운 프로젝트 시작", donts: "시간 지체하기", item: "금색 액세서리" },
+                    { title: "소소한 행운 (小吉) 🍀", score: "85점", desc: "길 가다 우연히 기분 좋은 만남이나 소식을 접하게 됩니다. 미소를 잃지 마세요.", dos: "산책하기", donts: "불평불만", item: "민트 사탕" },
+                    { title: "평온무사 (平穩無事) ☕", score: "70점", desc: "특별한 문제 없이 평화롭고 안정적인 하루입니다. 내실을 다지기에 제격인 시간입니다.", dos: "독서나 취미 생활", donts: "충동 구매", item: "따뜻한 차" },
+                    { title: "반전 기회 (逆轉) 🚀", score: "92점", desc: "처음엔 꼬이는 듯싶으나 막판에 엄청난 반전으로 기분 좋게 마무리되는 하루입니다.", dos: "끝까지 포기하지 않기", donts: "조급한 마음", item: "무선 이어폰" },
+                    { title: "지혜 탐구 (探求) 💡", score: "78점", desc: "아이디어가 샘솟는 날입니다. 공부나 창작 활동을 하면 기대 이상의 성과를 얻습니다.", dos: "메모하기", donts: "스마트폰 과다 사용", item: "노트와 펜" },
+                    { title: "감성 충만 (感性) 🎨", score: "80점", desc: "예술적 감각과 감성이 풍부해지는 날입니다. 음악이나 전시회를 즐겨보세요.", dos: "좋아하는 음악 듣기", donts: "늦잠 자기", item: "헤드폰" },
+                    { title: "돌다리 건너기 (愼重) ⚠️", score: "50점", desc: "사소한 실수가 생길 수 있으니 문서나 계약, 메시지를 보낼 때 두 번 확인하세요.", dos: "더블 체크하기", donts: "성급한 결정", item: "손거울" },
+                    { title: "인연 포착 (緣分) 💖", score: "88점", desc: "좋은 사람들과 깊은 대화를 나누거나 뜻밖의 좋은 인연을 만날 수 있는 날입니다.", dos: "먼저 안부 전하기", donts: "약속 늦기", item: "향수" },
+                    { title: "체력 충전 (充電) 🔋", score: "60점", desc: "몸이 쉽게 피로를 느낄 수 있습니다. 오늘은 무리하지 말고 일찍 쉬어주는 것이 답입니다.", dos: "반신욕이나 족욕", donts: "과도한 운동", item: "비타민 음료" },
+                    { title: "재물 상승 (財物) 💰", score: "95점", desc: "생각지도 못한 작은 용돈이나 이벤트 당첨 같은 소소한 재물운이 따르는 하루입니다.", dos: "지갑 정리하기", donts: "쓸데없는 지출", item: "동전 지갑" },
+                    { title: "말조심 데이 (言愼) 🤐", score: "45점", desc: "의도치 않은 말 한마디로 오해를 살 수 있으니 남을 배려하는 언어를 사용하세요.", dos: "경청하기", donts: "뒷담화 참여", item: "립밤" },
+                    { title: "집중력 폭발 (集中) 🎯", score: "90점", desc: "몰입도가 극에 달해 그동안 미뤄둔 밀린 일들을 순식간에 처리할 수 있습니다.", dos: "To-Do 리스트 작성", donts: "멀티태스킹", item: "타이머" },
+                    { title: "소신 있게 (初志一貫) 🦁", score: "82점", desc: "남들의 말에 휘둘리지 않고 내 고집대로 밀고 나가는 것이 유리한 날입니다.", dos: "자신감 갖기", donts: "눈치 보기", item: "볼드한 반지" },
+                    { title: "비움의 미학 (整理) 🧹", score: "65점", desc: "주변 환경이나 복잡한 생각을 정리하면 새로운 좋은 기운이 들어옵니다.", dos: "방 청소 및 정리", donts: "미련 남기기", item: "물티슈" },
+                    { title: "초대박 로또운 (大福) 🎰", score: "99점", desc: "오늘 당신은 행운 그 자체입니다. 복권을 사거나 뽑기를 해보아도 좋은 날!", dos: "도전적인 시도", donts: "소극적인 태도", item: "숫자 7" }
+                ]
+            },
+            en: {
+                mainTitle: "✨ Daily Fortune ✨",
+                subTitle: "Test your luck just once a day!",
+                btnDraw: "Break Fortune Cookie 🍪",
+                labelDos: "✅ Good to Do",
+                labelDonts: "❌ Things to Avoid",
+                labelItem: "💡 Lucky Item",
+                alreadyMsg: "⏳ You have already checked your fortune today!<br>Please come back tomorrow.",
+                alertOnce: "You can only check your fortune once a day!",
+                fortunes: [
+                    { title: "Ultimate Luck 🌟", score: "100 pts", desc: "The universe is smiling at you! If you have something in mind, start right now.", dos: "Start a new project", donts: "Delaying time", item: "Gold accessory" },
+                    { title: "Small Happiness 🍀", score: "85 pts", desc: "Good news or pleasant meetings are waiting for you today. Keep smiling!", dos: "Taking a walk", donts: "Complaining", item: "Mint candy" },
+                    { title: "Peaceful Day ☕", score: "70 pts", desc: "A calm and stable day with no big issues. Perfect for self-care.", dos: "Reading or hobbies", donts: "Impulse buying", item: "Warm tea" },
+                    { title: "Great Plot Twist 🚀", score: "92 pts", desc: "It might start a bit messy, but it will end with a fantastic plot twist!", dos: "Never giving up", donts: "Being impatient", item: "Wireless earbuds" },
+                    { title: "Wisdom Search 💡", score: "78 pts", desc: "Ideas will flow endlessly. Great day for studying or creative work.", dos: "Taking notes", donts: "Excessive phone use", item: "Notebook and pen" },
+                    { title: "Artistic Vibe 🎨", score: "80 pts", desc: "Your artistic sensibility is high today. Enjoy some music or art.", dos: "Listening to music", donts: "Oversleeping", item: "Headphones" },
+                    { title: "Be Cautious ⚠️", score: "50 pts", desc: "Minor mistakes can happen. Double-check before sending messages or documents.", dos: "Double checking", donts: "Hasty decisions", item: "Hand mirror" },
+                    { title: "New Connections 💖", score: "88 pts", desc: "A great day to connect deeply with good people or meet new friends.", dos: "Saying hello first", donts: "Being late", item: "Perfume" },
+                    { title: "Recharge Energy 🔋", score: "60 pts", desc: "Your body might feel tired easily. Rest early today instead of pushing yourself.", dos: "Warm bath", donts: "Overexercising", item: "Vitamin drink" },
+                    { title: "Financial Luck 💰", score: "95 pts", desc: "Small unexpected money or winning a tiny prize might happen today!", dos: "Organizing wallet", donts: "Wasteful spending", item: "Coin purse" },
+                    { title: "Watch Your Words 🤐", score: "45 pts", desc: "Unintended words might cause misunderstandings. Speak thoughtfully.", dos: "Active listening", donts: "Gossiping", item: "Lip balm" },
+                    { title: "Laser Focus 🎯", score: "90 pts", desc: "Your concentration is sky-high! You can finish delayed work effortlessly.", dos: "Making To-Do list", donts: "Multitasking", item: "Timer" },
+                    { title: "Stay Confident 🦁", score: "82 pts", desc: "Trust your judgment rather than listening too much to others.", dos: "Being confident", donts: "Caring too much", item: "Bold ring" },
+                    { title: "Decluttering 🧹", score: "65 pts", desc: "Clean up your desk or clear your head to invite fresh positive energy.", dos: "Cleaning room", donts: "Holding on past", item: "Wet wipes" },
+                    { title: "Jackpot Luck 🎰", score: "99 pts", desc: "You are luck itself today! Try a lottery or a random draw.", dos: "Bold attempts", donts: "Being passive", item: "Number 7" }
+                ]
+            },
+            ja: {
+                mainTitle: "✨ 今日の運勢 ✨",
+                subTitle: "1日1回だけ、あなたの運を試してみましょう！",
+                btnDraw: "フォーチュンクッキーを割る 🍪",
+                labelDos: "✅ おすすめの行動",
+                labelDonts: "❌ 避けるべき行動",
+                labelItem: "💡 ラッキーアイテム",
+                alreadyMsg: "⏳ 本日の運勢はすでに確認済みです！<br>また明日お越しください。",
+                alertOnce: "1日に1回しか見ることができません！",
+                fortunes: [
+                    { title: "天運大通 🌟", score: "100点", desc: "全ての運気があなたに味方する最高の il！迷っていたことがあれば今すぐ挑戦して！", dos: "新しいことを始める", donts: "時間を無駄にする", item: "ゴールドのアクセサリー" },
+                    { title: "ささやかな幸せ 🍀", score: "85点", desc: "思いがけない嬉しいニュースや出会いがあります。笑顔を忘れずに！", dos: "散歩をする", donts: "愚痴を言う", item: "ミントキャンディ" },
+                    { title: "平穏無事 ☕", score: "70点", desc: "問題なく平和で安定した一日です。自分磨きに最適な時間です。", dos: "読書や趣味", donts: "衝動買い", item: "温かいお茶" },
+                    { title: "大逆転 🚀", score: "92点", desc: "最初はこじれるように見えても、最後には素晴らしい逆転劇が待っています！", dos: "最後まで諦めない", donts: "焦る気持ち", item: "ワイヤレスイヤホン" },
+                    { title: "ひらめき探求 💡", score: "78点", desc: "アイデアが次々と湧き出る日。勉強やクリエイティブな活動で成果が出ます。", dos: "メモを取る", donts: "スマホのいじりすぎ", item: "ノートとペン" },
+                    { title: "感性豊か 🎨", score: "80点", desc: "芸術的感性が高まる日です。音楽やアートに触れてリフレッシュしましょう。", dos: "好きな音楽を聴く", donts: "二度寝をする", item: "ヘッドホン" },
+                    { title: "慎重第一 ⚠️", score: "50点", desc: "些細なミスが起きやすい日。連絡や書類の送信前には確認を忘れずに。", dos: "ダブルチェック", donts: "雑な決定", item: "手鏡" },
+                    { title: "素敵なご縁 💖", score: "88点", desc: "良い人と深い会話ができたり、新しい素晴らしいご縁に恵まれる日です。", dos: "自分から挨拶する", donts: "遅刻する", item: "香水" },
+                    { title: "体力充電 🔋", score: "60点", desc: "疲れを感じやすい日。無理をせず、今日は早めに休むのが吉です。", dos: "半身浴", donts: "過度な運動", item: "ビタミンドリンク" },
+                    { title: "金運アップ 💰", score: "95点", desc: "思いがけない臨時収入や、小さな懸賞に当たるような幸運があるかも！", dos: "財布の整理", donts: "無駄遣い", item: "コインケース" },
+                    { title: "言葉に注意 🤐", score: "45点", desc: "意図しない一言で誤解を生むことも。相手を思いやる言葉遣いを心掛けて。", dos: "相手の話を聞く", donts: "悪口に参加する", item: "リップバーム" },
+                    { title: "超集中力 🎯", score: "90点", desc: "集中力が極限まで高まり、後回しにしていた作業を一気に片付けられます。", dos: "To-Doリスト作成", donts: "マルチタスク", item: "タイマー" },
+                    { title: "初志貫徹 🦁", score: "82点", desc: "周囲の意見に振り回されず、自分の信念を貫く方が良い結果を生みます。", dos: "自信を持つ", donts: "人の目を気にする", item: "大ぶりのリング" },
+                    { title: "断捨離 🧹", score: "65点", desc: "部屋や頭の中を整理すると、新しく良い運気が流れ込んできます。", dos: "部屋の掃除", donts: "未練を残す", item: "ウェットティッシュ" },
+                    { title: "超大吉 🎰", score: "99点", desc: "今日のあなたは幸運そのもの！クジ引きや新しい挑戦に絶好のチャンスです。", dos: "大胆な挑戦", donts: "消極的な態度", item: "数字の7" }
+                ]
+            },
+            zh: {
+                mainTitle: "✨ 今日运势 ✨",
+                subTitle: "一天仅一次，来测测你的好运吧！",
+                btnDraw: "砸开幸运饼干 🍪",
+                labelDos: "✅ 宜做事项",
+                labelDonts: "❌ 忌做事项",
+                labelItem: "💡 幸运物品",
+                alreadyMsg: "⏳ 您今天已经看过了运势！<br>请明天再来。",
+                alertOnce: "一天只能查看一次！",
+                fortunes: [
+                    { title: "鸿运当头 🌟", score: "100分", desc: "所有好运都向你倾斜的至佳之日！如果有犹豫不决的事，现在就行动吧。", dos: "开启新项目", donts: "拖延时间", item: "金色饰品" },
+                    { title: "小确幸 🍀", score: "85分", desc: "会在路上偶遇美好的人或消息，保持微笑，好运常伴。", dos: "散步放松", donts: "抱怨不休", item: "薄荷糖" },
+                    { title: "平稳安康 ☕", score: "70分", desc: "平静顺利的一天，没有烦心事。非常适合沉淀自我。", dos: "阅读或兴趣爱好", donts: "冲动消费", item: "热茶" },
+                    { title: "大反转 🚀", score: "92分", desc: "一开始可能有点小波折，但最终会迎来绝妙的反转和完美收尾！", dos: "坚持到底", donts: "急躁不安", item: "无线耳机" },
+                    { title: "智慧爆发 💡", score: "78分", desc: "灵感不断涌现的一天，用于学习或创作会取得意想不到的成果。", dos: "随手做笔记", donts: "过度沉迷手机", item: "笔记本和笔" },
+                    { title: "艺术感满满 🎨", score: "80分", desc: "艺术感知力敏锐的一天，不妨听听音乐或看个展览。", dos: "听喜欢的音乐", donts: "睡懒觉", item: "头戴式耳机" },
+                    { title: "谨言慎行 ⚠️", score: "50分", desc: "容易出现小失误，发信息或处理文件前记得反复核对。", dos: "仔细核对", donts: "草率决定", item: "便携小镜子" },
+                    { title: "贵人缘 💖", score: "88分", desc: "能与优秀的人深度沟通，甚至结识意想不到的良缘。", dos: "主动打招呼", donts: "迟到", item: "香水" },
+                    { title: "电量补充 🔋", score: "60分", desc: "容易感到疲劳，今天不要勉强自己，早点休息才是王道。", dos: "泡脚或泡澡", donts: "过度运动", item: "维生素饮料" },
+                    { title: "财运滚滚 💰", score: "95分", desc: "会有意外的小零花钱或中奖等小财运降临！", dos: "整理钱包", donts: "铺张浪费", item: "零钱包" },
+                    { title: "口舌谨防 🤐", score: "45分", desc: "无心的一句话可能会引起误会，多倾听，用温柔的语言沟通。", dos: "倾听他人", donts: "参与八卦", item: "润唇膏" },
+                    { title: "极致专注 🎯", score: "90分", desc: "专注力极高的一天，能把拖延已久的积压事务瞬间搞定。", dos: "列Task List", donts: "一心多用", item: "定时器" },
+                    { title: "坚守初心 🦁", score: "82分", desc: "不要被他人的言语左右，坚持自己的主见反而会有极佳效果。", dos: "保持自信", donts: "看人脸色", item: "大颗戒指" },
+                    { title: "断舍离 🧹", score: "65分", desc: "清理周围环境或整理繁杂的思绪，能吸引全新的好运降临。", dos: "打扫房间", donts: "恋恋不舍", item: "湿纸巾" },
+                    { title: "超级大吉 🎰", score: "99分", desc: "今天你就是幸运本身！非常适合买彩票或尝试有挑战的事。", dos: "大胆尝试", donts: "消极退缩", item: "数字 7" }
+                ]
+            }
+        };
+
+        let currentLang = 'ko';
+
+        function getTodayDate() {
+            const date = new Date();
+            return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        }
+
+        function changeLanguage(lang) {
+            currentLang = lang;
+            localStorage.setItem('avodo_fortune_lang', lang);
+            updateUIStrings();
+
+            const lastDrawnDate = localStorage.getItem('avodo_fortune_date');
+            if (lastDrawnDate === getTodayDate()) {
+                const savedIndex = localStorage.getItem('avodo_fortune_index');
+                if (savedIndex !== null) {
+                    showResultContent(i18n[currentLang].fortunes[savedIndex]);
+                }
+            }
+        }
+
+        function updateUIStrings() {
+            const t = i18n[currentLang];
+            document.getElementById('txt-main-title').innerText = t.mainTitle;
+            document.getElementById('txt-sub-title').innerText = t.subTitle;
+            document.getElementById('txt-btn-draw').innerText = t.btnDraw;
+            document.getElementById('label-dos').innerText = t.labelDos;
+            document.getElementById('label-donts').innerText = t.labelDonts;
+            document.getElementById('label-item').innerText = t.labelItem;
+            document.getElementById('txt-already-msg').innerHTML = t.alreadyMsg;
+        }
+
+        window.onload = function() {
+            const savedLang = localStorage.getItem('avodo_fortune_lang') || 'ko';
+            currentLang = savedLang;
+            document.getElementById('lang-select').value = savedLang;
+            updateUIStrings();
+
+            if (localStorage.getItem('avodo_fortune_date') === getTodayDate()) {
+                document.getElementById('before-draw').classList.add('hidden');
+                document.getElementById('already-drawn').classList.remove('hidden');
+                
+                const savedIndex = localStorage.getItem('avodo_fortune_index');
+                if (savedIndex !== null) {
+                    showResultContent(i18n[currentLang].fortunes[savedIndex]);
+                    document.getElementById('after-draw').classList.remove('hidden');
+                }
+            }
+        };
+
+        function drawFortune() {
+            const today = getTodayDate();
+            if (localStorage.getItem('avodo_fortune_date') === today) {
+                alert(i18n[currentLang].alertOnce);
+                return;
+            }
+
+            // 쿠키 흔들리며 깨지는 애니메이션 실행
+            const cookie = document.getElementById('cookie-btn');
+            cookie.classList.add('cookie-shake');
+
+            const fortunes = i18n[currentLang].fortunes;
+            const randomIndex = Math.floor(Math.random() * fortunes.length);
+            const selectedFortune = fortunes[randomIndex];
+
+            localStorage.setItem('avodo_fortune_date', today);
+            localStorage.setItem('avodo_fortune_index', randomIndex);
+            localStorage.setItem('avodo_fortune_lang', currentLang);
+
+            // 0.6초 애니메이션 끝난 후 결과창 등장
+            setTimeout(() => {
+                document.getElementById('before-draw').classList.add('hidden');
+                showResultContent(selectedFortune);
+                
+                const afterBox = document.getElementById('after-draw');
+                afterBox.classList.remove('hidden');
+                afterBox.classList.add('animate-paper');
+            }, 600);
+        }
+
+        function showResultContent(fortune) {
+            document.getElementById('res-title').innerText = fortune.title;
+            document.getElementById('res-score').innerText = fortune.score;
+            document.getElementById('res-desc').innerText = fortune.desc;
+            document.getElementById('res-dos').innerText = fortune.dos;
+            document.getElementById('res-donts').innerText = fortune.donts;
+            document.getElementById('res-item').innerText = fortune.item;
+        }
+    </script>
+</body>
+</html>
